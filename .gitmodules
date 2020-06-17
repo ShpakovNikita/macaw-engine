@@ -1,0 +1,18 @@
+[submodule "external/glm"]
+	path = external/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "external/SDL2"]
+	path = external/SDL2
+	url = git@github.com:ShpakovNikita/SDL2.git
+[submodule "external/nativefiledialog"]
+	path = external/nativefiledialog
+	url = https://github.com/mlabbe/nativefiledialog.git
+[submodule "external/tinygltf"]
+	path = external/tinygltf
+	url = https://github.com/syoyo/tinygltf.git
+[submodule "external/stb"]
+	path = external/stb
+	url = https://github.com/nothings/stb.git
+[submodule "assets/models/glTF-Sample-Models"]
+	path = assets/models/glTF-Sample-Models
+	url = https://github.com/KhronosGroup/glTF-Sample-Models.git
