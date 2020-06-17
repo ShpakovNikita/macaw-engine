@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12.0)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
-set(TARGET_NAME wolfram-engine)
+set(TARGET_NAME macaw-engine)
 project(${TARGET_NAME})
 
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
