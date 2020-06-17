@@ -1,10 +1,10 @@
 #include <iostream>
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 const int WIDTH = 800, HEIGHT = 600;
 
-int main( int argc, char *argv[] )
+int main()
 {
     SDL_Init( SDL_INIT_EVERYTHING );
 
