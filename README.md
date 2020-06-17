@@ -1,4 +1,4 @@
-# wolfram-engine
+# macaw-engine
 Metal PBR IBL engine
 
 ### How to build?
