@@ -9,6 +9,8 @@ set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 file(GLOB_RECURSE SOURCE_FILES LIST_DIRECTORIES false
     "${SOURCE_DIR}/*.cpp"
     "${SOURCE_DIR}/*.hpp"
+    "${SOURCE_DIR}/*.h"
+    "${SOURCE_DIR}/*.mm"
 )
 
 include_directories(external/glm)
@@ -26,4 +28,5 @@ include_directories(${SDL2_INCLUDE_DIRS})
 add_executable(${TARGET_NAME} ${SOURCE_FILES})
 
 target_link_libraries(${TARGET_NAME} ${SDL2_LIBRARIES})
+target_link_libraries(${TARGET_NAME} "-framework Metal")
 target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
