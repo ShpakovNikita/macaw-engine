@@ -1,56 +1,26 @@
-#import "Foundation/Foundation.h"
-#import <Metal/Metal.h>
-#import <QuartzCore/CAMetalLayer.h>
-
 #include <iostream>
 
-#include <SDL.h>
+#include "Core/Engine.hpp"
+#include "Core/ImmutableConfig.hpp"
 
 const int WIDTH = 800, HEIGHT = 600;
 
-int main()
+int main(int argc, char* argv[])
 {
-    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
-    SDL_InitSubSystem(SDL_INIT_VIDEO);
-    SDL_Window *window = SDL_CreateWindow("SDL Metal", -1, -1, WIDTH, HEIGHT, SDL_WINDOW_ALLOW_HIGHDPI);
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
+    mcw::ImmutableConfig engineConfig = { WIDTH, HEIGHT, {} };
+    for (size_t i = 0; i < static_cast<size_t>(argc); i++) {
+        engineConfig.args.push_back(argv[i]);
+    };
 
-    MTLClearColor color = MTLClearColorMake(0, 0, 0, 1);
-    bool quit = false;
-    SDL_Event e;
+    mcw::Engine engine = { engineConfig };
 
-    const CAMetalLayer *swapchain = (__bridge CAMetalLayer *)SDL_RenderGetMetalLayer(renderer);
-    const id<MTLDevice> gpu = swapchain.device;
-    const id<MTLCommandQueue> queue = [gpu newCommandQueue];
-    
-    while (!quit) {
-        while (SDL_PollEvent(&e) != 0) {
-            switch (e.type) {
-                case SDL_QUIT: quit = true; break;
-            }
-        }
-
-        id<CAMetalDrawable> surface = [swapchain nextDrawable];
-        
-        color.red = (color.red > 1.0) ? 0 : color.red + 0.01;
-
-        MTLRenderPassDescriptor *pass = [MTLRenderPassDescriptor renderPassDescriptor];
-        pass.colorAttachments[0].clearColor = color;
-        pass.colorAttachments[0].loadAction  = MTLLoadActionClear;
-        pass.colorAttachments[0].storeAction = MTLStoreActionStore;
-        pass.colorAttachments[0].texture = surface.texture;
-
-        id<MTLCommandBuffer> buffer = [queue commandBuffer];
-        id<MTLRenderCommandEncoder> encoder = [buffer renderCommandEncoderWithDescriptor:pass];
-        [encoder endEncoding];
-        [buffer presentDrawable:surface];
-        [buffer commit];
+    int execResult;
+    try {
+        engine.Run();
+        execResult = EXIT_SUCCESS;
+    } catch (const std::runtime_error& e) {
+        std::cerr << e.what() << std::endl;
+        execResult = EXIT_FAILURE;
     }
-
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-
-    
-    return EXIT_SUCCESS;
+    return execResult;
 }
