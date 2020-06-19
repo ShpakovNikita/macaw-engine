@@ -18,18 +18,23 @@ namespace mcw {
     
     private:
         void Init();
+        void Prepare();
         void MainTick(float dt);
         void Cleanup();
+        
+        const std::string GetAssetsPath() const;
+        
+        void CreateVertexBuffer();
+        void CreateSimplePipeline();
         
         bool quit = false;
         
         ImmutableConfig config;
         
         SDL_Window *window;
-        SDL_Renderer *renderer;
         
-        CAMetalLayer *swapchain;
-        id<MTLDevice> device;
-        id<MTLCommandQueue> queue;
+        id<MTLRenderPipelineState> renderPipelineState;
+        // TODO: move to model class
+        id<MTLBuffer> vertexBuffer;
     };
 }
