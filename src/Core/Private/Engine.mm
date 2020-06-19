@@ -101,18 +101,18 @@ void mcw::Engine::Prepare()
 
 void mcw::Engine::MainTick(float dt)
 {
+    static MTLClearColor color = MTLClearColorMake(0, 0, 0, 1);
+    
     @autoreleasepool
     {
         const std::vector<AAPLVertex> vertexData =
         {
-           { {  250,  -250 }, { 1, 0, 0, 1 } },
-           { { -250,  -250 }, { 0, 1, 0, 1 } },
-           { {    0,   250 }, { 0, 0, 1, 1 } },
+           { {  0.5,  -0.5 }, { 1, 0, 0, 1 } },
+           { { -0.5,  -0.5 }, { 0, 1, 0, 1 } },
+           { {    0,   0.5 }, { 0, 0, 1, 1 } },
         };
         
         const vector_uint2 viewportSize = { config.width, config.height };
-        
-        static MTLClearColor color = MTLClearColorMake(0, 0, 0, 1);
         
         SDL_Event e;
         while (SDL_PollEvent(&e) != 0) {
@@ -132,30 +132,32 @@ void mcw::Engine::MainTick(float dt)
         pass.colorAttachments[0].texture = surface.texture;
 
         id<MTLCommandBuffer> commandBuffer = [MetalContext::Get().queue commandBuffer];
-        id<MTLRenderCommandEncoder> encoder = [commandBuffer renderCommandEncoderWithDescriptor:pass];
         
-        id<MTLRenderCommandEncoder> renderEncoder =
-        [commandBuffer renderCommandEncoderWithDescriptor:pass];
-        renderEncoder.label = @"MyRenderEncoder";
+        {
+            id<MTLRenderCommandEncoder> renderEncoder =
+            [commandBuffer renderCommandEncoderWithDescriptor:pass];
+            renderEncoder.label = @"MyRenderEncoder";
 
-        MTLViewport viewport = {0.0, 0.0, static_cast<double>(viewportSize.x), static_cast<double>(viewportSize.y), 0.0, 1.0 };
-        [renderEncoder setViewport:viewport];
-        
-        [renderEncoder setRenderPipelineState:renderPipelineState];
+            MTLViewport viewport = {0.0, 0.0, static_cast<double>(viewportSize.x * 2.0), static_cast<double>(viewportSize.y * 2.0), 0.0, 1.0 };
+            [renderEncoder setViewport:viewport];
+            
+            [renderEncoder setRenderPipelineState:renderPipelineState];
 
-        [renderEncoder setVertexBytes:vertexData.data()
-                               length:sizeof(AAPLVertex) * vertexData.size()
-                              atIndex:AAPLVertexInputIndexVertices];
-        
-        [renderEncoder setVertexBytes:&viewportSize
-                               length:sizeof(viewportSize)
-                              atIndex:AAPLVertexInputIndexViewportSize];
+            [renderEncoder setVertexBytes:vertexData.data()
+                                   length:sizeof(AAPLVertex) * vertexData.size()
+                                  atIndex:AAPLVertexInputIndexVertices];
+            
+            [renderEncoder setVertexBytes:&viewportSize
+                                   length:sizeof(viewportSize)
+                                  atIndex:AAPLVertexInputIndexViewportSize];
 
-        [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle
-                          vertexStart:0
-                          vertexCount:3];
+            [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle
+                              vertexStart:0
+                              vertexCount:3];
+             
+            [renderEncoder endEncoding];
+        }
         
-        [encoder endEncoding];
         [commandBuffer presentDrawable:surface];
         [commandBuffer commit];
     }
