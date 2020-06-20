@@ -3,7 +3,7 @@
 #import "Foundation/Foundation.h"
 
 #include "Render/MetalContext.hpp"
-#include "Common/AAPLVertex.hpp"
+#include "Common/Vertex.hpp"
 
 #include <chrono>
 #include <algorithm>
@@ -51,16 +51,16 @@ void mcw::Engine::Init()
 
 void mcw::Engine::CreateVertexBuffer()
 {
-    const std::vector<AAPLVertex> vertexData =
+    const std::vector<Vertex> vertexData =
     {
-       { {  250,  -250 }, { 1, 0, 0, 1 } },
-       { { -250,  -250 }, { 0, 1, 0, 1 } },
-       { {    0,   250 }, { 0, 0, 1, 1 } },
+       { {  0.5,  -0.5 }, { 1, 0, 0, 1 } },
+       { { -0.5,  -0.5 }, { 0, 1, 0, 1 } },
+       { {    0,   0.5 }, { 0, 0, 1, 1 } },
     };
     
     vertexBuffer = [MetalContext::Get().device newBufferWithBytes:vertexData.data()
                            length:sizeof(vertexData[0]) * vertexData.size()
-                           options:MTLResourceOptionCPUCacheModeDefault];
+                           options:MTLResourceStorageModeShared];
 }
 
 void mcw::Engine::CreateSimplePipeline()
@@ -69,8 +69,8 @@ void mcw::Engine::CreateSimplePipeline()
     
     id<MTLLibrary> defaultLibrary = [MetalContext::Get().device newDefaultLibrary];
 
-    id<MTLFunction> vertexFunction = [defaultLibrary newFunctionWithName:@"vertexShader"];
-    id<MTLFunction> fragmentFunction = [defaultLibrary newFunctionWithName:@"fragmentShader"];
+    id<MTLFunction> vertexFunction = [defaultLibrary newFunctionWithName:@"VertexShader"];
+    id<MTLFunction> fragmentFunction = [defaultLibrary newFunctionWithName:@"FragmentShader"];
     
     MTLRenderPipelineDescriptor *pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
     pipelineStateDescriptor.label = @"Simple Pipeline";
@@ -105,13 +105,6 @@ void mcw::Engine::MainTick(float dt)
     
     @autoreleasepool
     {
-        const std::vector<AAPLVertex> vertexData =
-        {
-           { {  0.5,  -0.5 }, { 1, 0, 0, 1 } },
-           { { -0.5,  -0.5 }, { 0, 1, 0, 1 } },
-           { {    0,   0.5 }, { 0, 0, 1, 1 } },
-        };
-        
         const vector_uint2 viewportSize = { config.width, config.height };
         
         SDL_Event e;
@@ -143,13 +136,9 @@ void mcw::Engine::MainTick(float dt)
             
             [renderEncoder setRenderPipelineState:renderPipelineState];
 
-            [renderEncoder setVertexBytes:vertexData.data()
-                                   length:sizeof(AAPLVertex) * vertexData.size()
-                                  atIndex:AAPLVertexInputIndexVertices];
-            
-            [renderEncoder setVertexBytes:&viewportSize
-                                   length:sizeof(viewportSize)
-                                  atIndex:AAPLVertexInputIndexViewportSize];
+            [renderEncoder setVertexBuffer:vertexBuffer
+                                   offset:0
+                                  atIndex:VertexInputIndexVertices];
 
             [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle
                               vertexStart:0

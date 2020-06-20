@@ -1,5 +1,5 @@
 // TODO: something with cmake includes
-#include "../Common/AAPLVertex.hpp"
+#include "../Common/Vertex.hpp"
 
 typedef struct
 {
@@ -8,12 +8,10 @@ typedef struct
 } RasterizerData;
 
 vertex RasterizerData
-vertexShader(uint vertexID [[vertex_id]],
-             constant AAPLVertex *vertices [[buffer(AAPLVertexInputIndexVertices)]],
-             constant vector_uint2 *viewportSizePointer [[buffer(AAPLVertexInputIndexViewportSize)]])
+VertexShader(uint vertexID [[vertex_id]],
+             constant Vertex *vertices [[buffer(VertexInputIndexVertices)]])
 {
     float2 pixelSpacePosition = vertices[vertexID].position.xy;
-    // vector_float2 viewportSize = vector_float2(*viewportSizePointer);
     
     RasterizerData out;
     out.position = vector_float4(0.0, 0.0, 0.0, 1.0);
@@ -23,7 +21,7 @@ vertexShader(uint vertexID [[vertex_id]],
     return out;
 }
 
-fragment float4 fragmentShader(RasterizerData in [[stage_in]])
+fragment float4 FragmentShader(RasterizerData in [[stage_in]])
 {
     return in.color;
 }
