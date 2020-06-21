@@ -8,7 +8,10 @@
 struct SDL_Window;
 struct SDL_Renderer;
 
-namespace mcw {
+namespace mcw
+{
+    class Scene;
+
     class Engine
     {
     public:
@@ -22,9 +25,10 @@ namespace mcw {
         void MainTick(float dt);
         void Cleanup();
         
+        void LoadModel(const std::string& filepath);
+        
         const std::string GetAssetsPath() const;
         
-        void CreateVertexBuffer();
         void CreateSimplePipeline();
         
         bool quit = false;
@@ -34,7 +38,7 @@ namespace mcw {
         SDL_Window *window;
         
         id<MTLRenderPipelineState> renderPipelineState;
-        // TODO: move to model class
-        id<MTLBuffer> vertexBuffer;
+        
+        std::unique_ptr<Scene> scene;
     };
 }

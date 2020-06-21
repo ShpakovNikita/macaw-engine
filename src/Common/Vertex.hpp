@@ -7,6 +7,7 @@ typedef enum VertexInputIndex
 
 typedef struct
 {
-    vector_float2 position;
-    vector_float4 color;
+    vector_float4 position;
+    vector_float4 normal;
+    vector_float4 uv; // uv0 + uv1
 } Vertex;

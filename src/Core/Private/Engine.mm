@@ -2,6 +2,7 @@
 
 #import "Foundation/Foundation.h"
 
+#include "Render/Model/Scene.hpp"
 #include "Render/MetalContext.hpp"
 #include "Common/Vertex.hpp"
 
@@ -49,20 +50,6 @@ void mcw::Engine::Init()
     MetalContext::Get().Init(*window);
 }
 
-void mcw::Engine::CreateVertexBuffer()
-{
-    const std::vector<Vertex> vertexData =
-    {
-       { {  0.5,  -0.5 }, { 1, 0, 0, 1 } },
-       { { -0.5,  -0.5 }, { 0, 1, 0, 1 } },
-       { {    0,   0.5 }, { 0, 0, 1, 1 } },
-    };
-    
-    vertexBuffer = [MetalContext::Get().device newBufferWithBytes:vertexData.data()
-                           length:sizeof(vertexData[0]) * vertexData.size()
-                           options:MTLResourceStorageModeShared];
-}
-
 void mcw::Engine::CreateSimplePipeline()
 {
     NSError *error;
@@ -97,6 +84,13 @@ void mcw::Engine::Prepare()
 {
     CreateVertexBuffer();
     CreateSimplePipeline();
+    LoadModel(GetAssetsPath() + "models/glTF-Sample-Models/2.0/MetalRoughSpheres/glTF/MetalRoughSpheres.gltf");
+}
+
+void mcw::Engine::LoadModel(const std::string& filepath)
+{
+    scene = std::make_unique<Scene>();
+    scene->LoadFromFile(filepath);
 }
 
 void mcw::Engine::MainTick(float dt)
@@ -136,14 +130,11 @@ void mcw::Engine::MainTick(float dt)
             
             [renderEncoder setRenderPipelineState:renderPipelineState];
 
-            [renderEncoder setVertexBuffer:vertexBuffer
-                                   offset:0
-                                  atIndex:VertexInputIndexVertices];
-
-            [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle
-                              vertexStart:0
-                              vertexCount:3];
-             
+            if (scene)
+            {
+                scene->Draw(renderEncoder);
+            }
+            
             [renderEncoder endEncoding];
         }
         
