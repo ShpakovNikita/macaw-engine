@@ -13,6 +13,7 @@ namespace mcw
     class Mesh;
 
     class Node {
+    public:
         Node* parent = nullptr;
         uint32_t index;
         std::vector<std::unique_ptr<Node>> children;

@@ -8,6 +8,7 @@ namespace mcw
 {
     class Material
     {
+    public:
         struct MaterialParams {
             glm::vec4 baseColorFactor = glm::vec4(1.0f);
             glm::vec4 emissiveFactor = glm::vec4(0.0f);
@@ -23,5 +24,7 @@ namespace mcw
         } materialParamsData = {};
         
         id<MTLBuffer> materialParamsBuffer;
+        
+        void UpdateUniformBuffers();
     };
 }

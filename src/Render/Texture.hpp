@@ -2,6 +2,11 @@
 
 namespace mcw
 {
+    struct TextureSampler
+    {
+        
+    };
+
     class Texture
     {
         

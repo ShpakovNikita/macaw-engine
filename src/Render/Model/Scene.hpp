@@ -3,9 +3,12 @@
 #import "Metal/Metal.h"
 
 #include <string>
+#include <vector>
 #include <memory>
 
 #include "glm/vec3.hpp"
+
+struct Vertex;
 
 namespace tinygltf
 {
@@ -16,9 +19,11 @@ namespace tinygltf
 
 namespace mcw
 {
+    struct TextureSampler;
     class Material;
     class Node;
     class Texture;
+    class Primitive;
 
     class Scene
     {
@@ -39,14 +44,12 @@ namespace mcw
         void Draw(id<MTLRenderCommandEncoder> renderEncoder);
         
     private:
-        static VkSamplerAddressMode GetVkWrapMode(int32_t wrapMode);
-        static VkFilter GetVkFilterMode(int32_t filterMode);
+        // static VkSamplerAddressMode GetVkWrapMode(int32_t wrapMode);
+        // static VkFilter GetVkFilterMode(int32_t filterMode);
 
         void LoadTextureSamplers(const tinygltf::Model& input);
         void LoadTextures(const tinygltf::Model& input);
         void LoadMaterials(const tinygltf::Model& input);
-        void LoadAnimations(const tinygltf::Model& input);
-        void LoadSkins(const tinygltf::Model& input);
 
         void CalculateSize();
 
@@ -63,8 +66,6 @@ namespace mcw
         std::vector<Texture> textures;
         std::vector<TextureSampler> textureSamplers;
         std::vector<std::unique_ptr<Material>> materials;
-        std::vector<Animation> animations;
-        std::vector<std::string> extensions;
 
         glm::vec3 size = {};
 

@@ -9,7 +9,9 @@
 
 namespace mcw
 {
-    class Mesh {
+    class Mesh
+    {
+    public:
         std::vector<std::unique_ptr<Primitive>> primitives = {};
 
         AABBox bbox = {};
