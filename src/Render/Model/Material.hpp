@@ -27,11 +27,11 @@ namespace mcw
         
         id<MTLBuffer> materialParamsBuffer;
         
-        Texture* baseColorTexture       = nullptr;
-        Texture* metallicRoughnessTexture = nullptr;
-        Texture* normalTexture            = nullptr;
-        Texture* occlusionTexture         = nullptr;
-        Texture* emissiveTexture          = nullptr;
+        const Texture* baseColorTexture         = nullptr;
+        const Texture* metallicRoughnessTexture = nullptr;
+        const Texture* normalTexture            = nullptr;
+        const Texture* occlusionTexture         = nullptr;
+        const Texture* emissiveTexture          = nullptr;
         
         void UpdateUniformBuffers();
     };

@@ -72,19 +72,10 @@ void mcw::Engine::CreateSimplePipeline()
     NSCAssert(renderPipelineState, @"Failed to create pipeline state: %@", error);
 }
 
-const std::string mcw::Engine::GetAssetsPath() const
-{
-#if defined(ASSETS_DIR)
-    return ASSETS_DIR;
-#else
-    return "./../assets/";
-#endif
-}
-
 void mcw::Engine::Prepare()
 {
     CreateSimplePipeline();
-    LoadModel(GetAssetsPath() + "models/glTF-Sample-Models/2.0/MetalRoughSpheres/glTF/MetalRoughSpheres.gltf");
+    LoadModel(MetalContext::Get().GetAssetsPath() + "models/glTF-Sample-Models/2.0/MetalRoughSpheres/glTF/MetalRoughSpheres.gltf");
 }
 
 void mcw::Engine::LoadModel(const std::string& filepath)

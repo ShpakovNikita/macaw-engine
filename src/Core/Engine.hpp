@@ -28,8 +28,6 @@ namespace mcw
         
         void LoadModel(const std::string& filepath);
         
-        const std::string GetAssetsPath() const;
-        
         void CreateSimplePipeline();
         
         bool quit = false;

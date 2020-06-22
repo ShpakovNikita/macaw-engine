@@ -19,8 +19,6 @@ namespace SLogger
         };
     };
 
-    static NullOstream NullLogStream;
-
     std::string BuildPrefix(const std::string& appendix, mcw::eTag tag)
     {
         static const std::map<mcw::eTag, std::string> TagNames =
@@ -42,7 +40,8 @@ std::ostream& mcw::LogD(eTag tag)
         return std::cout << SLogger::BuildPrefix("(Debug)", tag);
     }
     
-    return SLogger::NullLogStream;
+    // TODO: return NullOstream
+    return std::cout;
 }
 
 std::ostream& mcw::LogI(eTag tag)

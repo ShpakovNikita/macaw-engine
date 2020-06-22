@@ -6,6 +6,7 @@
 #include "Render/Model/Node.hpp"
 #include "Render/Model/Primitive.hpp"
 #include "Render/MetalContext.hpp"
+#include "Render/TextureManager.hpp"
 #include "Render/Texture.hpp"
 #include "Core/Exceptions.hpp"
 #include "Utils/Logger.hpp"
@@ -21,6 +22,8 @@
 
 namespace SScene
 {
+    const std::string kDefaultTexturePath = mcw::MetalContext::Get().GetAssetsPath() + "textures/ffffff.png";
+
     template <typename T>
     void FillVertexAttribute(const tinygltf::Primitive& primitive, const tinygltf::Model& input, const std::string& attrName, int compSize, const T** buffer, int& bufferStride)
     {
@@ -169,6 +172,14 @@ void mcw::Scene::LoadMaterials(const tinygltf::Model& input)
             materialParams.emissiveFactor = glm::vec4(glm::make_vec3(mat.additionalValues.at("emissiveFactor").ColorFactor().data()), 1.0);
         }
         
+        const Texture& defaultTexture = MetalContext::Get().textureManager->GetTexture(SScene::kDefaultTexturePath);
+        
+        material->baseColorTexture = material->baseColorTexture ? material->baseColorTexture : &defaultTexture;
+        material->metallicRoughnessTexture = material->metallicRoughnessTexture ? material->metallicRoughnessTexture : &defaultTexture;
+        material->emissiveTexture = material->emissiveTexture ? material->emissiveTexture : &defaultTexture;
+        material->occlusionTexture = material->occlusionTexture ? material->occlusionTexture : &defaultTexture;
+        material->normalTexture = material->normalTexture ? material->normalTexture : &defaultTexture;
+        
         material->materialParamsData = materialParams;
 
         material->UpdateUniformBuffers();
@@ -238,11 +249,8 @@ void mcw::Scene::LoadNode(Node* parent, const tinygltf::Node& node, uint32_t nod
         newNode->matrix = glm::make_mat4x4(node.matrix.data());
     };
 
-    // Node with children
-    if (node.children.size() > 0) {
-        for (size_t i = 0; i < node.children.size(); i++) {
-            LoadNode(newNode.get(), input.nodes[node.children[i]], node.children[i], input, globalscale);
-        }
+    for (size_t i = 0; i < node.children.size(); i++) {
+        LoadNode(newNode.get(), input.nodes[node.children[i]], node.children[i], input, globalscale);
     }
     
     // Node contains mesh data
@@ -261,7 +269,6 @@ void mcw::Scene::LoadNode(Node* parent, const tinygltf::Node& node, uint32_t nod
             uint32_t vertexStart = 0;
             uint32_t indexCount = 0;
             uint32_t vertexCount = 0;
-            bool hasSkin = false;
             bool hasIndices = primitive.indices > -1;
 
             glm::vec3 posMin {};
@@ -273,8 +280,6 @@ void mcw::Scene::LoadNode(Node* parent, const tinygltf::Node& node, uint32_t nod
                 const float* bufferNormals = nullptr;
                 const float* bufferTexCoordSet0 = nullptr;
                 const float* bufferTexCoordSet1 = nullptr;
-                const uint16_t* bufferJoints = nullptr;
-                const float* bufferWeights = nullptr;
 
                 int posByteStride = 0;
                 int normByteStride = 0;
@@ -294,9 +299,7 @@ void mcw::Scene::LoadNode(Node* parent, const tinygltf::Node& node, uint32_t nod
 
                 posMin = glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
                 posMax = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
-
-                hasSkin = (bufferJoints && bufferWeights);
-
+                
                 for (size_t v = 0; v < posAccessor.count; ++v) {
                     Vertex vert = {};
                     vert.position = glm::vec4(glm::make_vec3(&bufferPos[v * posByteStride]), 1.0f).x;
