@@ -16,6 +16,7 @@ namespace mcw
     {
     public:
         Engine(const ImmutableConfig& config);
+        ~Engine();
         
         void Run();
     

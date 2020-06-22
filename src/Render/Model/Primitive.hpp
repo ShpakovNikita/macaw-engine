@@ -2,7 +2,7 @@
 
 #import <Metal/Metal.h>
 
-#include "Render/Model/AABBox.h"
+#include "Render/Model/AABBox.hpp"
 
 namespace mcw
 {

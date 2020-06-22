@@ -4,7 +4,6 @@
 
 #include "Render/Model/Scene.hpp"
 #include "Render/MetalContext.hpp"
-#include "Common/Vertex.hpp"
 
 #include <chrono>
 #include <algorithm>
@@ -13,6 +12,8 @@
 mcw::Engine::Engine(const mcw::ImmutableConfig& aConfig)
     : config(aConfig)
 {}
+
+mcw::Engine::~Engine() = default;
 
 void mcw::Engine::Run()
 {
@@ -82,7 +83,6 @@ const std::string mcw::Engine::GetAssetsPath() const
 
 void mcw::Engine::Prepare()
 {
-    CreateVertexBuffer();
     CreateSimplePipeline();
     LoadModel(GetAssetsPath() + "models/glTF-Sample-Models/2.0/MetalRoughSpheres/glTF/MetalRoughSpheres.gltf");
 }

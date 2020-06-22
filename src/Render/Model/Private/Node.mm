@@ -1,6 +1,11 @@
 #include "Render/Model/Node.hpp"
 
+#import "Metal/MTLStageInputOutputDescriptor.h"
+
 #include "Render/Model/Mesh.hpp"
+#include "Render/Model/Material.hpp"
+#include "Render/Texture.hpp"
+#include "Common/Vertex.hpp"
 
 mcw::Node::Node() = default;
 
@@ -29,5 +34,35 @@ void mcw::Node::UpdateRecursive()
 
     for (auto& child : children) {
         child->UpdateRecursive();
+    }
+}
+
+void mcw::Node::DrawNode(id<MTLRenderCommandEncoder> renderEncoder) const
+{
+    if (mesh)
+    {
+        for (const auto& primitive : mesh->primitives)
+        {
+            [renderEncoder setVertexBuffer:primitive->vertices
+                                    offset:0
+                                   atIndex:VertexInputIndexVertices];
+            
+            [renderEncoder setFragmentTexture:primitive->material.albedoColorTexture->metalTexture
+                                      atIndex:VertexInputAlbedoColorTexture];
+            [renderEncoder setFragmentTexture:primitive->material.metallicRoughnessTexture->metalTexture
+                                      atIndex:VertexInputMetallicRoughnessTexture];
+            [renderEncoder setFragmentTexture:primitive->material.normalTexture->metalTexture
+                                      atIndex:VertexInputNormalTexture];
+            [renderEncoder setFragmentTexture:primitive->material.occlusionTexture->metalTexture
+                                      atIndex:VertexInputOcclusionTexture];
+            [renderEncoder setFragmentTexture:primitive->material.emissiveTexture->metalTexture
+                                      atIndex:VertexInputEmissiveTexture];
+            
+            [renderEncoder drawIndexedPrimitives: MTLPrimitiveTypeTriangle
+                                      indexCount: primitive->indexCount,
+                                       indexType: MTLIndexTypeUInt32,
+                                     indexBuffer: primitive.indices,
+                               indexBufferOffset: 0];
+        }
     }
 }

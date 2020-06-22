@@ -6,6 +6,8 @@
 
 namespace mcw
 {
+    class Texture;
+    
     class Material
     {
     public:
@@ -24,6 +26,12 @@ namespace mcw
         } materialParamsData = {};
         
         id<MTLBuffer> materialParamsBuffer;
+        
+        Texture* albedoColorTexture       = nullptr;
+        Texture* metallicRoughnessTexture = nullptr;
+        Texture* normalTexture            = nullptr;
+        Texture* occlusionTexture         = nullptr;
+        Texture* emissiveTexture          = nullptr;
         
         void UpdateUniformBuffers();
     };

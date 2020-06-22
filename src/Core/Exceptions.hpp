@@ -1,12 +1,12 @@
 #pragma once
 
-#include <vcruntime_exception.h>
+#include <stdexcept>
 
 namespace mcw
 {
-    struct AssetLoadingException : public std::exception {
+    struct AssetLoadingException : public std::runtime_error {
         AssetLoadingException(const char* msg)
-            : std::exception(msg)
+            : std::runtime_error(msg)
         {
         }
     };

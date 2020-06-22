@@ -6,7 +6,6 @@
 #include "Render/Model/Node.hpp"
 #include "Render/Model/Primitive.hpp"
 #include "Render/MetalContext.hpp"
-#include "Common/Vertex.hpp"
 #include "Core/Exceptions.hpp"
 
 #include "tinygltf/tiny_gltf.h"
@@ -34,7 +33,6 @@ void mcw::Scene::LoadFromFile(const std::string& filename, float scale/* = 1.0f*
     bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, filename);
     
     if (fileLoaded) {
-        LoadTextureSamplers(glTFInput);
         LoadTextures(glTFInput);
         LoadMaterials(glTFInput);
 
@@ -86,9 +84,9 @@ const glm::vec3& mcw::Scene::GetSize() const
     return size;
 }
 
-const uint32_t mcw::Scene::GetPrimitivesCount() const
+size_t mcw::Scene::GetPrimitivesCount() const
 {
-    uint32_t primCount = 0;
+    size_t primCount = 0;
     for (const auto& node : allNodes) {
         if (node->mesh) {
             primCount += static_cast<uint32_t>(node->mesh->primitives.size());
@@ -98,81 +96,15 @@ const uint32_t mcw::Scene::GetPrimitivesCount() const
     return primCount;
 }
 
-/*
-// from GLTF2 specs
-uint32_t mcw::Scene::GetWrapMode(int32_t wrapMode)
-{
-    switch (wrapMode) {
-    case 10497:
-        return MODE_REPEAT;
-    case 33071:
-        return MODE_CLAMP_TO_EDGE;
-    case 33648:
-        return MODE_MIRRORED_REPEAT;
-    default:
-        return MODE_REPEAT;
-    }
-}
-
-// from GLTF2 specs
-uint32_t mcw::Scene::GetFilterMode(int32_t filterMode)
-{
-    switch (filterMode) {
-    case 9728:
-        return FILTER_NEAREST;
-    case 9729:
-        return FILTER_LINEAR;
-    case 9984:
-        return FILTER_NEAREST;
-    case 9985:
-        return FILTER_NEAREST;
-    case 9986:
-        return FILTER_LINEAR;
-    case 9987:
-        return FILTER_LINEAR;
-    default:
-        return FILTER_NEAREST;
-    }
-}
-*/
-
-void mcw::Scene::LoadTextureSamplers(const tinygltf::Model& input)
-{
-    textureSamplers.resize(input.samplers.size());
-    
-    for (tinygltf::Sampler smpl : input.samplers) {
-        TextureSampler sampler;
-        /*
-        sampler.minFilter = GetFilterMode(smpl.minFilter);
-        sampler.magFilter = GetFilterMode(smpl.magFilter);
-        sampler.addressModeU = GetWrapMode(smpl.wrapS);
-        sampler.addressModeV = GetWrapMode(smpl.wrapT);
-        sampler.addressModeW = sampler.addressModeV;
-         */
-        textureSamplers.push_back(sampler);
-    }
-}
-
 void mcw::Scene::LoadTextures(const tinygltf::Model& input)
 {
     textures.reserve(input.textures.size());
 
     for (const tinygltf::Texture& tex : input.textures) {
         const tinygltf::Image& image = input.images[tex.source];
-        /*
-        TextureSampler textureSampler;
-        if (tex.sampler == -1) {
-            textureSampler.magFilter = FILTER_LINEAR;
-            textureSampler.minFilter = FILTER_LINEAR;
-            textureSampler.addressModeU = SAMPLER_ADDRESS_MODE_REPEAT;
-            textureSampler.addressModeV = SAMPLER_ADDRESS_MODE_REPEAT;
-            textureSampler.addressModeW = SAMPLER_ADDRESS_MODE_REPEAT;
-        } else {
-            textureSampler = textureSamplers[tex.sampler];
-        }
-        */
+        
         Texture texture;
-        texture.FromGLTFImage(image);
+        texture.LoadFromBuffer(image.image[0], MTLPixelFormatRGBA8Unorm, image.width, image.height, image.component == 3);
         textures.push_back(texture);
     }
 }
@@ -223,9 +155,6 @@ void mcw::Scene::LoadMaterials(const tinygltf::Model& input)
         materialParams.metallicFactor = material->metallicFactor;
         materialParams.roughnessFactor = material->roughnessFactor;
         materialParams.emissiveFactor = material->emissiveFactor;
-
-        // Notice: this value used in shader
-        materialParams.workflow = 0.0f;
 
         materialParams.colorTextureSet = material->baseColorTexture != nullptr ? material->texCoordSets.baseColor : -1;
         materialParams.physicalDescriptorTextureSet = material->metallicRoughnessTexture != nullptr ? material->texCoordSets.metallicRoughness : -1;
@@ -449,15 +378,10 @@ void mcw::Scene::LoadNode(Node* parent, const tinygltf::Node& node, uint32_t nod
     }
 }
 
-void mcw::Scene::Draw(id<MTLRenderCommandEncoder>)
+void mcw::Scene::Draw(id<MTLRenderCommandEncoder> renderEncoder)
 {
-    /*
-    [renderEncoder setVertexBuffer:vertexBuffer
-                            offset:0
-                           atIndex:VertexInputIndexVertices];
-
-     [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle
-                       vertexStart:0
-                       vertexCount:3];
-     */
+    for (const Node* node : allNodes)
+    {
+        node->DrawNode(renderEncoder);
+    }
 }

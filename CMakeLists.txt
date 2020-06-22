@@ -26,8 +26,10 @@ file(GLOB_RECURSE COMMON_FILES LIST_DIRECTORIES false
 )
 set(SOURCE_FILES ${SOURCE_FILES} ${HEADER_FILES} ${METAL_SHADERS})
 
+include_directories(external)
 include_directories(external/glm)
-include_directories(external/nativefiledialog)
+include_directories(external/nativefiledialog/src/include)
+include_directories(external/nativefiledialog/src)
 include_directories(external/stb)
 include_directories(external/tinygltf)
 include_directories(${MACAW_SOURCE_PATH})

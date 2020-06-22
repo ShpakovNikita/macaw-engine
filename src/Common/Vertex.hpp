@@ -1,8 +1,15 @@
+#pragma once
+
 #include <simd/simd.h>
 
 typedef enum VertexInputIndex
 {
-    VertexInputIndexVertices     = 0,
+    VertexInputIndexVertices            = 0,
+    VertexInputAlbedoColorTexture       = 1,
+    VertexInputMetallicRoughnessTexture = 2,
+    VertexInputNormalTexture            = 3,
+    VertexInputOcclusionTexture         = 4,
+    VertexInputEmissiveTexture          = 5,
 } VertexInputIndex;
 
 typedef struct

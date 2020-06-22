@@ -1,12 +1,16 @@
 #pragma once
 
+#import "Metal/Metal.h"
+
+#include "Render/Model/AABBox.hpp"
+
 #include <vector>
 #include <memory>
 #include <string>
 
 #include <glm/vec3.hpp>
 #include "glm/ext/quaternion_float.hpp"
-#include <glm/mat4.hpp>
+#include <glm/mat4x4.hpp>
 
 namespace mcw
 {
@@ -20,16 +24,18 @@ namespace mcw
         glm::mat4 matrix;
         std::string name;
         std::unique_ptr<Mesh> mesh;
-        glm::vec3 translation {};
-        glm::vec3 scale { 1.0f };
-        glm::quat rotation {};
+        glm::vec3 translation = {};
+        glm::vec3 scale = glm::vec3{ 1.0f };
+        glm::quat rotation = {};
 
-        AABBox bbox;
+        AABBox bbox = {};
 
         Node();
         
         glm::mat4 GetLocalMatrix();
         glm::mat4 GetWorldMatrix();
+        
+        void DrawNode(id<MTLRenderCommandEncoder> renderEncoder) const;
 
         void UpdateRecursive();
     };
