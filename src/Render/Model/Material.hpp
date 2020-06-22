@@ -27,7 +27,7 @@ namespace mcw
         
         id<MTLBuffer> materialParamsBuffer;
         
-        Texture* albedoColorTexture       = nullptr;
+        Texture* baseColorTexture       = nullptr;
         Texture* metallicRoughnessTexture = nullptr;
         Texture* normalTexture            = nullptr;
         Texture* occlusionTexture         = nullptr;

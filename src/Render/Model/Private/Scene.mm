@@ -6,23 +6,35 @@
 #include "Render/Model/Node.hpp"
 #include "Render/Model/Primitive.hpp"
 #include "Render/MetalContext.hpp"
+#include "Render/Texture.hpp"
 #include "Core/Exceptions.hpp"
+#include "Utils/Logger.hpp"
+
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#define TINYGLTF_IMPLEMENTATION
 
 #include "tinygltf/tiny_gltf.h"
 
+#include "glm/ext/matrix_transform.hpp"
+#include <glm/gtc/type_ptr.hpp>
+
 namespace SScene
 {
-template <typename T>
-void FillVertexAttribute(const tinygltf::Primitive& primitive, const tinygltf::Model& input, const std::string& attrName, int compSize, const T** buffer, int& bufferStride)
-{
-    if (primitive.attributes.find(attrName) != primitive.attributes.end()) {
-        const tinygltf::Accessor& accessor = input.accessors[primitive.attributes.find(attrName)->second];
-        const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
-        *buffer = reinterpret_cast<const T*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
-        bufferStride = accessor.ByteStride(view) ? (accessor.ByteStride(view) / sizeof(T)) : tinygltf::GetNumComponentsInType(compSize);
+    template <typename T>
+    void FillVertexAttribute(const tinygltf::Primitive& primitive, const tinygltf::Model& input, const std::string& attrName, int compSize, const T** buffer, int& bufferStride)
+    {
+        if (primitive.attributes.find(attrName) != primitive.attributes.end()) {
+            const tinygltf::Accessor& accessor = input.accessors[primitive.attributes.find(attrName)->second];
+            const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
+            *buffer = reinterpret_cast<const T*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+            bufferStride = accessor.ByteStride(view) ? (accessor.ByteStride(view) / sizeof(T)) : tinygltf::GetNumComponentsInType(compSize);
+        }
     }
 }
-}
+
+mcw::Scene::Scene() = default;
+mcw::Scene::~Scene() = default;
 
 void mcw::Scene::LoadFromFile(const std::string& filename, float scale/* = 1.0f*/)
 {
@@ -32,21 +44,25 @@ void mcw::Scene::LoadFromFile(const std::string& filename, float scale/* = 1.0f*
 
     bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, filename);
     
-    if (fileLoaded) {
+    if (fileLoaded)
+    {
         LoadTextures(glTFInput);
         LoadMaterials(glTFInput);
 
-        if (glTFInput.scenes.empty()) {
+        if (glTFInput.scenes.empty())
+        {
             throw AssetLoadingException("Could not the load file!");
         }
 
         const tinygltf::Scene& scene = glTFInput.scenes[glTFInput.defaultScene > -1 ? glTFInput.defaultScene : 0];
-        for (size_t i = 0; i < scene.nodes.size(); i++) {
+        for (size_t i = 0; i < scene.nodes.size(); i++)
+        {
             const tinygltf::Node node = glTFInput.nodes[scene.nodes[i]];
             LoadNode(nullptr, node, scene.nodes[i], glTFInput, scale);
         }
         
-        for (auto node : allNodes) {
+        for (auto node : allNodes)
+        {
             if (node->mesh)
             {
                 node->UpdateRecursive();
@@ -54,9 +70,12 @@ void mcw::Scene::LoadFromFile(const std::string& filename, float scale/* = 1.0f*
         }
 
         CalculateSize();
-    } else {
+    }
+    else
+    {
         throw AssetLoadingException("Could not open the glTF file. Check, if it is correct");
         return;
+    }
 }
 
 std::vector<std::unique_ptr<mcw::Material>>& mcw::Scene::GetMaterials()
@@ -104,7 +123,7 @@ void mcw::Scene::LoadTextures(const tinygltf::Model& input)
         const tinygltf::Image& image = input.images[tex.source];
         
         Texture texture;
-        texture.LoadFromBuffer(image.image[0], MTLPixelFormatRGBA8Unorm, image.width, image.height, image.component == 3);
+        texture.LoadFromBuffer(static_cast<const void*>(image.image.data()), MTLPixelFormatRGBA8Unorm, image.width, image.height, image.component == 3);
         textures.push_back(texture);
     }
 }
@@ -115,57 +134,41 @@ void mcw::Scene::LoadMaterials(const tinygltf::Model& input)
     
     for (const tinygltf::Material& mat : input.materials) {
         std::unique_ptr<Material> material = std::make_unique<Material>();
+        Material::MaterialParams materialParams;
+        
         if (mat.values.find("baseColorTexture") != mat.values.end()) {
             material->baseColorTexture = &textures[mat.values.at("baseColorTexture").TextureIndex()];
-            material->texCoordSets.baseColor = mat.values.at("baseColorTexture").TextureTexCoord();
+            materialParams.colorTextureSet = mat.values.at("baseColorTexture").TextureTexCoord();
         }
         if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) {
             material->metallicRoughnessTexture = &textures[mat.values.at("metallicRoughnessTexture").TextureIndex()];
-            material->texCoordSets.metallicRoughness = mat.values.at("metallicRoughnessTexture").TextureTexCoord();
+            materialParams.physicalDescriptorTextureSet = mat.values.at("metallicRoughnessTexture").TextureTexCoord();
         }
         if (mat.values.find("roughnessFactor") != mat.values.end()) {
-            material->roughnessFactor = static_cast<float>(mat.values.at("roughnessFactor").Factor());
+            materialParams.roughnessFactor = static_cast<float>(mat.values.at("roughnessFactor").Factor());
         }
         if (mat.values.find("metallicFactor") != mat.values.end()) {
-            material->metallicFactor = static_cast<float>(mat.values.at("metallicFactor").Factor());
+            materialParams.metallicFactor = static_cast<float>(mat.values.at("metallicFactor").Factor());
         }
         if (mat.values.find("baseColorFactor") != mat.values.end()) {
-            material->baseColorFactor = glm::make_vec4(mat.values.at("baseColorFactor").ColorFactor().data());
+            materialParams.baseColorFactor = glm::make_vec4(mat.values.at("baseColorFactor").ColorFactor().data());
         }
         if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
             material->normalTexture = &textures[mat.additionalValues.at("normalTexture").TextureIndex()];
-            material->texCoordSets.normal = mat.additionalValues.at("normalTexture").TextureTexCoord();
+            materialParams.normalTextureSet = mat.additionalValues.at("normalTexture").TextureTexCoord();
         }
         if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end()) {
             material->emissiveTexture = &textures[mat.additionalValues.at("emissiveTexture").TextureIndex()];
-            material->texCoordSets.emissive = mat.additionalValues.at("emissiveTexture").TextureTexCoord();
+            materialParams.emissiveTextureSet = mat.additionalValues.at("emissiveTexture").TextureTexCoord();
         }
         if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end()) {
             material->occlusionTexture = &textures[mat.additionalValues.at("occlusionTexture").TextureIndex()];
-            material->texCoordSets.occlusion = mat.additionalValues.at("occlusionTexture").TextureTexCoord();
+            materialParams.occlusionTextureSet = mat.additionalValues.at("occlusionTexture").TextureTexCoord();
         }
         if (mat.additionalValues.find("emissiveFactor") != mat.additionalValues.end()) {
-            material->emissiveFactor = glm::vec4(glm::make_vec3(mat.additionalValues.at("emissiveFactor").ColorFactor().data()), 1.0);
-            material->emissiveFactor = glm::vec4(0.0f);
+            materialParams.emissiveFactor = glm::vec4(glm::make_vec3(mat.additionalValues.at("emissiveFactor").ColorFactor().data()), 1.0);
         }
-
-        Material::MaterialParams materialParams;
-
-        materialParams.baseColorFactor = material->baseColorFactor;
-        materialParams.metallicFactor = material->metallicFactor;
-        materialParams.roughnessFactor = material->roughnessFactor;
-        materialParams.emissiveFactor = material->emissiveFactor;
-
-        materialParams.colorTextureSet = material->baseColorTexture != nullptr ? material->texCoordSets.baseColor : -1;
-        materialParams.physicalDescriptorTextureSet = material->metallicRoughnessTexture != nullptr ? material->texCoordSets.metallicRoughness : -1;
-        materialParams.normalTextureSet = material->normalTexture != nullptr ? material->texCoordSets.normal : -1;
-        materialParams.occlusionTextureSet = material->occlusionTexture != nullptr ? material->texCoordSets.occlusion : -1;
-        materialParams.emissiveTextureSet = material->emissiveTexture != nullptr ? material->texCoordSets.emissive : -1;
-
-        materialParams.baseColorFactor = material->baseColorFactor;
-        materialParams.metallicFactor = material->metallicFactor;
-        materialParams.roughnessFactor = material->roughnessFactor;
-        materialParams.alphaMaskCutoff = material->alphaCutoff;
+        
         material->materialParamsData = materialParams;
 
         material->UpdateUniformBuffers();
@@ -200,7 +203,7 @@ void mcw::Scene::CreatePrimitiveBuffers(Primitive* newPrimitive, std::vector<Ver
     std::vector<uint32_t>& indexBuffer)
 {
     newPrimitive->vertices = [MetalContext::Get().device newBufferWithBytes:vertexBuffer.data()
-                       length:sizeof(Vertex) * vertexData.size()
+                       length:sizeof(Vertex) * vertexBuffer.size()
                        options:MTLResourceStorageModeShared];
     
     newPrimitive->indices = [MetalContext::Get().device newBufferWithBytes:indexBuffer.data()
@@ -219,19 +222,16 @@ void mcw::Scene::LoadNode(Node* parent, const tinygltf::Node& node, uint32_t nod
     newNode->matrix = glm::mat4(1.0f);
 
     // Generate local node matrix
-    glm::vec3 translation = glm::vec3(0.0f);
     if (node.translation.size() == 3) {
-        translation = glm::make_vec3(node.translation.data());
+        glm::vec3 translation = glm::make_vec3(node.translation.data());
         newNode->translation = translation;
     }
-    glm::mat4 rotation = glm::mat4(1.0f);
     if (node.rotation.size() == 4) {
         glm::quat q = glm::make_quat(node.rotation.data());
         newNode->rotation = glm::mat4(q);
     }
-    glm::vec3 scale = glm::vec3(1.0f);
     if (node.scale.size() == 3) {
-        scale = glm::make_vec3(node.scale.data());
+        glm::vec3 scale = glm::make_vec3(node.scale.data());
         newNode->scale = scale;
     }
     if (node.matrix.size() == 16) {
@@ -244,7 +244,7 @@ void mcw::Scene::LoadNode(Node* parent, const tinygltf::Node& node, uint32_t nod
             LoadNode(newNode.get(), input.nodes[node.children[i]], node.children[i], input, globalscale);
         }
     }
-
+    
     // Node contains mesh data
     if (node.mesh > -1) {
         const tinygltf::Mesh mesh = input.meshes[node.mesh];
@@ -287,10 +287,10 @@ void mcw::Scene::LoadNode(Node* parent, const tinygltf::Node& node, uint32_t nod
                 const tinygltf::Accessor& posAccessor = input.accessors[primitive.attributes.find("POSITION")->second];
                 vertexCount = static_cast<uint32_t>(posAccessor.count);
 
-                SGLTFModel::FillVertexAttribute(primitive, input, "POSITION", TINYGLTF_TYPE_VEC3, &bufferPos, posByteStride);
-                SGLTFModel::FillVertexAttribute(primitive, input, "NORMAL", TINYGLTF_TYPE_VEC3, &bufferNormals, normByteStride);
-                SGLTFModel::FillVertexAttribute(primitive, input, "TEXCOORD_0", TINYGLTF_TYPE_VEC2, &bufferTexCoordSet0, uv0ByteStride);
-                SGLTFModel::FillVertexAttribute(primitive, input, "TEXCOORD_1", TINYGLTF_TYPE_VEC2, &bufferTexCoordSet1, uv1ByteStride);
+                SScene::FillVertexAttribute(primitive, input, "POSITION", TINYGLTF_TYPE_VEC3, &bufferPos, posByteStride);
+                SScene::FillVertexAttribute(primitive, input, "NORMAL", TINYGLTF_TYPE_VEC3, &bufferNormals, normByteStride);
+                SScene::FillVertexAttribute(primitive, input, "TEXCOORD_0", TINYGLTF_TYPE_VEC2, &bufferTexCoordSet0, uv0ByteStride);
+                SScene::FillVertexAttribute(primitive, input, "TEXCOORD_1", TINYGLTF_TYPE_VEC2, &bufferTexCoordSet1, uv1ByteStride);
 
                 posMin = glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
                 posMax = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
@@ -299,11 +299,11 @@ void mcw::Scene::LoadNode(Node* parent, const tinygltf::Node& node, uint32_t nod
 
                 for (size_t v = 0; v < posAccessor.count; ++v) {
                     Vertex vert = {};
-                    vert.pos = glm::vec4(glm::make_vec3(&bufferPos[v * posByteStride]), 1.0f);
-                    vert.normal = glm::vec4(glm::normalize(glm::vec3(bufferNormals ? glm::make_vec3(&bufferNormals[v * normByteStride]) : glm::vec3(0.0f))), 1.0f);
+                    vert.position = glm::vec4(glm::make_vec3(&bufferPos[v * posByteStride]), 1.0f).x;
+                    vert.normal = glm::vec4(glm::normalize(glm::vec3(bufferNormals ? glm::make_vec3(&bufferNormals[v * normByteStride]) : glm::vec3(0.0f))), 1.0f).x;
                     glm::vec2 uv0 = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec2(0.0f);
                     glm::vec2 uv1 = bufferTexCoordSet1 ? glm::make_vec2(&bufferTexCoordSet1[v * uv1ByteStride]) : glm::vec2(0.0f);
-                    vert.uv = glm::vec4(uv0.x, uv0.y, uv1.x, uv1.y);
+                    vert.uv = glm::vec4(uv0.x, uv0.y, uv1.x, uv1.y).x;
                     
                     vertexBuffer.push_back(vert);
                 }
@@ -341,7 +341,7 @@ void mcw::Scene::LoadNode(Node* parent, const tinygltf::Node& node, uint32_t nod
                     break;
                 }
                 default:
-                    std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
+                    LogW(eTag::kAssetLoading) << "Index component type " << accessor.componentType << " not supported!" << std::endl;
                     return;
                 }
             }

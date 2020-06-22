@@ -7,11 +7,13 @@
 #include "Render/Texture.hpp"
 #include "Common/Vertex.hpp"
 
+#include <glm/gtx/quaternion.hpp>
+
 mcw::Node::Node() = default;
 
 glm::mat4 mcw::Node::GetLocalMatrix()
 {
-        return glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), scale) * matrix;
+    return glm::translate(glm::mat4(1.0f), translation) * glm::toMat4(rotation) * glm::scale(glm::mat4(1.0f), scale) * matrix;
 }
 
 glm::mat4 mcw::Node::GetWorldMatrix()
@@ -47,8 +49,8 @@ void mcw::Node::DrawNode(id<MTLRenderCommandEncoder> renderEncoder) const
                                     offset:0
                                    atIndex:VertexInputIndexVertices];
             
-            [renderEncoder setFragmentTexture:primitive->material.albedoColorTexture->metalTexture
-                                      atIndex:VertexInputAlbedoColorTexture];
+            [renderEncoder setFragmentTexture:primitive->material.baseColorTexture->metalTexture
+                                      atIndex:VertexInputBaseColorTexture];
             [renderEncoder setFragmentTexture:primitive->material.metallicRoughnessTexture->metalTexture
                                       atIndex:VertexInputMetallicRoughnessTexture];
             [renderEncoder setFragmentTexture:primitive->material.normalTexture->metalTexture
@@ -59,9 +61,9 @@ void mcw::Node::DrawNode(id<MTLRenderCommandEncoder> renderEncoder) const
                                       atIndex:VertexInputEmissiveTexture];
             
             [renderEncoder drawIndexedPrimitives: MTLPrimitiveTypeTriangle
-                                      indexCount: primitive->indexCount,
-                                       indexType: MTLIndexTypeUInt32,
-                                     indexBuffer: primitive.indices,
+                                      indexCount: primitive->indexCount
+                                       indexType: MTLIndexTypeUInt32
+                                     indexBuffer: primitive->indices
                                indexBufferOffset: 0];
         }
     }

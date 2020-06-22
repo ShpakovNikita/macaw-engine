@@ -34,7 +34,11 @@ include_directories(external/stb)
 include_directories(external/tinygltf)
 include_directories(${MACAW_SOURCE_PATH})
 
-add_definitions(-DASSETS_DIR=\"${ASSETS_DIR}\")
+add_definitions(-DASSETS_DIR=\"${ASSETS_DIR}/\")
+
+if(CMAKE_BUILD_TYPE MATCHES DEBUG)
+    add_definitions(-DMCW_DEBUG)
+endif(CMAKE_BUILD_TYPE MATCHES DEBUG)
 
 set_source_files_properties(${METAL_SHADERS} ${HEADER_FILES} PROPERTIES LANGUAGE METAL)
 

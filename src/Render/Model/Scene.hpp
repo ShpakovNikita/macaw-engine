@@ -43,9 +43,6 @@ namespace mcw
         void Draw(id<MTLRenderCommandEncoder> renderEncoder);
         
     private:
-        // static VkSamplerAddressMode GetVkWrapMode(int32_t wrapMode);
-        // static VkFilter GetVkFilterMode(int32_t filterMode);
-
         void LoadTextures(const tinygltf::Model& input);
         void LoadMaterials(const tinygltf::Model& input);
 
