@@ -8,13 +8,13 @@
 #include "Render/MetalContext.hpp"
 #include "Render/TextureManager.hpp"
 #include "Render/Texture.hpp"
+#include "Render/Camera.hpp"
 #include "Core/Exceptions.hpp"
 #include "Utils/Logger.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define TINYGLTF_IMPLEMENTATION
-
 #include "tinygltf/tiny_gltf.h"
 
 #include "glm/ext/matrix_transform.hpp"
@@ -36,7 +36,11 @@ namespace SScene
     }
 }
 
-mcw::Scene::Scene() = default;
+mcw::Scene::Scene()
+{
+    camera = std::make_unique<Camera>();
+};
+
 mcw::Scene::~Scene() = default;
 
 void mcw::Scene::LoadFromFile(const std::string& filename, float scale/* = 1.0f*/)
@@ -116,6 +120,11 @@ size_t mcw::Scene::GetPrimitivesCount() const
     }
 
     return primCount;
+}
+
+mcw::Camera* mcw::Scene::GetCamera()
+{
+    return camera.get();
 }
 
 void mcw::Scene::LoadTextures(const tinygltf::Model& input)

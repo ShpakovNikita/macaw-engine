@@ -1,5 +1,6 @@
 // TODO: something with cmake includes
 #include "../Common/Vertex.hpp"
+#include "../Common/Uniforms.hpp"
 
 typedef struct
 {
@@ -9,13 +10,12 @@ typedef struct
 
 vertex RasterizerData
 VertexShader(uint vertexID [[vertex_id]],
-             constant Vertex *vertices [[buffer(VertexInputIndexVertices)]])
+             constant Vertex *vertices [[buffer(VertexInputIndexVertices)]],
+             constant CameraUniforms & cameraUniforms [[ buffer(BufferIndexCameraUniforms) ]])
 {
-    float2 pixelSpacePosition = vertices[vertexID].position.xy;
-    
     RasterizerData out;
     out.position = vector_float4(0.0, 0.0, 0.0, 1.0);
-    out.position.xy = pixelSpacePosition;
+    out.position = cameraUniforms.projection * cameraUniforms.view * vertices[vertexID].position;
     out.color = metal::normalize(vertices[vertexID].normal);
 
     return out;

@@ -23,6 +23,7 @@ namespace mcw
     class Node;
     class Texture;
     class Primitive;
+    class Camera;
 
     class Scene
     {
@@ -39,6 +40,8 @@ namespace mcw
 
         const glm::vec3& GetSize() const;
         size_t GetPrimitivesCount() const;
+        
+        Camera* GetCamera();
         
         void Draw(id<MTLRenderCommandEncoder> renderEncoder);
         
@@ -62,6 +65,8 @@ namespace mcw
         std::vector<std::unique_ptr<Material>> materials;
 
         glm::vec3 size = {};
+        
+        std::unique_ptr<Camera> camera;
 
     };
 }

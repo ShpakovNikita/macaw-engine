@@ -4,8 +4,10 @@
 
 #include "Render/Model/Scene.hpp"
 #include "Render/MetalContext.hpp"
+#include "Render/Camera.hpp"
 
 #include <chrono>
+#include <thread>
 #include <algorithm>
 #include <SDL.h>
 
@@ -23,7 +25,7 @@ void mcw::Engine::Run()
     std::chrono::time_point<std::chrono::steady_clock> currentTime = std::chrono::steady_clock::now();
     
     while (!quit) {
-        const float expectedFrameTime = 1000.0f / 60.0f;
+        const float expectedFrameTime = 1.0f / 60.0f;
         std::chrono::time_point<std::chrono::steady_clock> newCurrentTime = std::chrono::steady_clock::now();
         float frameDeltaSec = std::chrono::duration_cast<std::chrono::microseconds>(newCurrentTime - currentTime).count() / 1000.0f / 1000.0f;
 
@@ -36,6 +38,12 @@ void mcw::Engine::Run()
         currentTime = newCurrentTime;
         
         MainTick(frameDeltaSec);
+        
+        const float sleepTime = expectedFrameTime - frameDeltaSec;
+        if (sleepTime > 0.0f)
+        {
+            std::this_thread::sleep_for(std::chrono::microseconds(static_cast<size_t>(sleepTime * 1000.0f * 1000.0f)));
+        }
     }
 
     Cleanup();
@@ -94,9 +102,19 @@ void mcw::Engine::MainTick(float dt)
         
         SDL_Event e;
         while (SDL_PollEvent(&e) != 0) {
+            if (scene)
+            {
+                scene->GetCamera()->PollEvent(e, dt);
+            }
+            
             switch (e.type) {
                 case SDL_QUIT: quit = true; break;
             }
+        }
+        
+        if (scene)
+        {
+            scene->GetCamera()->UpdateUniformBuffers(dt);
         }
 
         id<CAMetalDrawable> surface = [MetalContext::Get().swapchain nextDrawable];
@@ -123,6 +141,9 @@ void mcw::Engine::MainTick(float dt)
 
             if (scene)
             {
+                // best practices for small buffers
+                [renderEncoder setVertexBytes:&scene->GetCamera()->cameraUniforms length:sizeof(CameraUniforms) atIndex:BufferIndexCameraUniforms];
+                
                 scene->Draw(renderEncoder);
             }
             

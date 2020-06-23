@@ -4,12 +4,15 @@
 
 typedef enum VertexInputIndex
 {
-    VertexInputIndexVertices            = 0,
-    VertexInputBaseColorTexture         = 1,
-    VertexInputMetallicRoughnessTexture = 2,
-    VertexInputNormalTexture            = 3,
-    VertexInputOcclusionTexture         = 4,
-    VertexInputEmissiveTexture          = 5,
+    VertexInputIndexVertices = 0,
+    VertexInputBaseColorTexture,
+    VertexInputMetallicRoughnessTexture,
+    VertexInputNormalTexture,
+    VertexInputOcclusionTexture,
+    VertexInputEmissiveTexture,
+    
+    BufferIndexCameraUniforms,
+    
 } VertexInputIndex;
 
 typedef struct
