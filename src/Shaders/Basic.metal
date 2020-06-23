@@ -16,7 +16,7 @@ VertexShader(uint vertexID [[vertex_id]],
     RasterizerData out;
     out.position = vector_float4(0.0, 0.0, 0.0, 1.0);
     out.position.xy = pixelSpacePosition;
-    out.color = vertices[vertexID].normal;
+    out.color = metal::normalize(vertices[vertexID].normal);
 
     return out;
 }

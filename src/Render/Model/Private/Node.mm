@@ -39,7 +39,7 @@ void mcw::Node::UpdateRecursive()
     }
 }
 
-void mcw::Node::DrawNode(id<MTLRenderCommandEncoder> renderEncoder) const
+void mcw::Node::Draw(id<MTLRenderCommandEncoder> renderEncoder) const
 {
     if (mesh)
     {

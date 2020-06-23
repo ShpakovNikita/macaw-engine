@@ -35,7 +35,7 @@ namespace mcw
         glm::mat4 GetLocalMatrix();
         glm::mat4 GetWorldMatrix();
         
-        void DrawNode(id<MTLRenderCommandEncoder> renderEncoder) const;
+        void Draw(id<MTLRenderCommandEncoder> renderEncoder) const;
 
         void UpdateRecursive();
     };

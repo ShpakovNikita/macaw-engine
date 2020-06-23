@@ -243,7 +243,7 @@ void mcw::Scene::LoadNode(Node* parent, const tinygltf::Node& node, uint32_t nod
     }
     if (node.scale.size() == 3) {
         glm::vec3 scale = glm::make_vec3(node.scale.data());
-        newNode->scale = scale;
+        newNode->scale = scale * globalscale;
     }
     if (node.matrix.size() == 16) {
         newNode->matrix = glm::make_mat4x4(node.matrix.data());
@@ -301,14 +301,23 @@ void mcw::Scene::LoadNode(Node* parent, const tinygltf::Node& node, uint32_t nod
                 posMax = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
                 
                 for (size_t v = 0; v < posAccessor.count; ++v) {
-                    Vertex vert = {};
-                    vert.position = glm::vec4(glm::make_vec3(&bufferPos[v * posByteStride]), 1.0f).x;
-                    vert.normal = glm::vec4(glm::normalize(glm::vec3(bufferNormals ? glm::make_vec3(&bufferNormals[v * normByteStride]) : glm::vec3(0.0f))), 1.0f).x;
+                    struct GLMVertex
+                    {
+                        glm::vec4 position;
+                        glm::vec4 normal;
+                        glm::vec4 uv;
+                    } vert = {};
+                    
+                    vert.position = glm::vec4(glm::make_vec3(&bufferPos[v * posByteStride]), 1.0f);
+                    vert.position *= 0.08f;
+                    vert.position.z += 1.5f;
+                    vert.normal = glm::vec4(glm::normalize(glm::vec3(bufferNormals ? glm::make_vec3(&bufferNormals[v * normByteStride]) : glm::vec3(0.0f))), 1.0f);
                     glm::vec2 uv0 = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec2(0.0f);
                     glm::vec2 uv1 = bufferTexCoordSet1 ? glm::make_vec2(&bufferTexCoordSet1[v * uv1ByteStride]) : glm::vec2(0.0f);
-                    vert.uv = glm::vec4(uv0.x, uv0.y, uv1.x, uv1.y).x;
+                    vert.uv = glm::vec4(uv0.x, uv0.y, uv1.x, uv1.y);
                     
-                    vertexBuffer.push_back(vert);
+                    Vertex* castedVert = reinterpret_cast<Vertex*>(&vert);
+                    vertexBuffer.push_back(*castedVert);
                 }
             }
             
@@ -385,6 +394,6 @@ void mcw::Scene::Draw(id<MTLRenderCommandEncoder> renderEncoder)
 {
     for (const Node* node : allNodes)
     {
-        node->DrawNode(renderEncoder);
+        node->Draw(renderEncoder);
     }
 }

@@ -81,7 +81,7 @@ void mcw::Engine::Prepare()
 void mcw::Engine::LoadModel(const std::string& filepath)
 {
     scene = std::make_unique<Scene>();
-    scene->LoadFromFile(filepath);
+    scene->LoadFromFile(filepath, 0.08f);
 }
 
 void mcw::Engine::MainTick(float dt)
