@@ -24,8 +24,6 @@ namespace mcw
         void Init(SDL_Window& window);
         void Cleanup();
         
-        const std::string GetAssetsPath() const;
-        
         CAMetalLayer *swapchain;
         id<MTLDevice> device;
         id<MTLCommandQueue> queue;

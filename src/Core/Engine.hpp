@@ -11,6 +11,7 @@ struct SDL_Renderer;
 namespace mcw
 {
     class Scene;
+    class Texture;
 
     class Engine
     {
@@ -29,15 +30,16 @@ namespace mcw
         void LoadModel(const std::string& filepath);
         
         void CreateSimplePipeline();
+        void CreateDepthTexture();
         
         bool quit = false;
         
         ImmutableConfig config;
         
-        SDL_Window *window;
-        
         id<MTLRenderPipelineState> renderPipelineState;
+        id<MTLDepthStencilState> depthLessEqual;
         
+        std::unique_ptr<Texture> depthTexture;
         std::unique_ptr<Scene> scene;
     };
 }

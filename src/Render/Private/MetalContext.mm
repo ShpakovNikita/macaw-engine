@@ -30,13 +30,3 @@ void mcw::MetalContext::Cleanup()
     
     textureManager = nullptr;
 }
-
-const std::string mcw::MetalContext::GetAssetsPath() const
-{
-#if defined(ASSETS_DIR)
-    return ASSETS_DIR;
-#else
-    return "./../assets/";
-#endif
-}
-

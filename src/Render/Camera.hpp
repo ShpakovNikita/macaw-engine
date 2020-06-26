@@ -31,8 +31,8 @@ namespace mcw
         glm::vec3 position;
         glm::vec3 rotation = glm::vec3(90.0f, 0.0f, 0.0f); // {yaw, pitch, roll} in degrees
         
-        float cameraSpeed = 1.0f;
-        float cameraSensitivity = 0.05f;
+        float cameraSpeed = 5.0f;
+        float cameraSensitivity = 0.15f;
         float cameraFOV = 45.0f;
         
         eCameraMode cameraMode = eCameraMode::kFirstPerson;

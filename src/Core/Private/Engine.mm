@@ -2,9 +2,13 @@
 
 #import "Foundation/Foundation.h"
 
+#include "Core/EngineContext.hpp"
+#include "Core/Window.hpp"
+
 #include "Render/Model/Scene.hpp"
 #include "Render/MetalContext.hpp"
 #include "Render/Camera.hpp"
+#include "Render/Texture.hpp"
 
 #include <chrono>
 #include <thread>
@@ -54,9 +58,9 @@ void mcw::Engine::Init()
     // Init SDL
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
     SDL_InitSubSystem(SDL_INIT_VIDEO);
-    window = SDL_CreateWindow("SDL Metal", -1, -1, config.width, config.height, SDL_WINDOW_ALLOW_HIGHDPI);
     
-    MetalContext::Get().Init(*window);
+    EngineContext::Get().Init(config);
+    MetalContext::Get().Init(*EngineContext::Get().GetWindow()->GetSDLWindow());
 }
 
 void mcw::Engine::CreateSimplePipeline()
@@ -73,17 +77,30 @@ void mcw::Engine::CreateSimplePipeline()
     pipelineStateDescriptor.vertexFunction = vertexFunction;
     pipelineStateDescriptor.fragmentFunction = fragmentFunction;
     pipelineStateDescriptor.colorAttachments[0].pixelFormat = MetalContext::Get().swapchain.pixelFormat;
+    pipelineStateDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
     
     renderPipelineState = [MetalContext::Get().device newRenderPipelineStateWithDescriptor:pipelineStateDescriptor
     error:&error];
-    
     NSCAssert(renderPipelineState, @"Failed to create pipeline state: %@", error);
+    
+    MTLDepthStencilDescriptor *depthDescriptor = [MTLDepthStencilDescriptor new];
+    depthDescriptor.depthCompareFunction = MTLCompareFunctionLessEqual;
+    depthDescriptor.depthWriteEnabled = YES;
+    depthLessEqual = [MetalContext::Get().device newDepthStencilStateWithDescriptor:depthDescriptor];
+    NSCAssert(depthLessEqual, @"Failed to create pipeline state: %@", error);
 }
 
 void mcw::Engine::Prepare()
 {
     CreateSimplePipeline();
-    LoadModel(MetalContext::Get().GetAssetsPath() + "models/glTF-Sample-Models/2.0/MetalRoughSpheres/glTF/MetalRoughSpheres.gltf");
+    LoadModel(EngineContext::Get().GetAssetsPath() + "models/glTF-Sample-Models/2.0/MetalRoughSpheres/glTF/MetalRoughSpheres.gltf");
+    CreateDepthTexture();
+}
+
+void mcw::Engine::CreateDepthTexture()
+{
+    depthTexture = std::make_unique<Texture>();
+    depthTexture->CreateEmpty(config.width, config.height, MTLPixelFormatDepth32Float);
 }
 
 void mcw::Engine::LoadModel(const std::string& filepath)
@@ -122,6 +139,12 @@ void mcw::Engine::MainTick(float dt)
         color.red = (color.red > 1.0) ? 0 : color.red + dt;
 
         MTLRenderPassDescriptor *pass = [MTLRenderPassDescriptor renderPassDescriptor];
+        
+        pass.depthAttachment.texture      = depthTexture->metalTexture;
+        pass.depthAttachment.loadAction   = MTLLoadActionClear;
+        pass.depthAttachment.clearDepth   = 1.0;
+        pass.depthAttachment.storeAction  = MTLStoreActionStore;
+        
         pass.colorAttachments[0].clearColor = color;
         pass.colorAttachments[0].loadAction  = MTLLoadActionClear;
         pass.colorAttachments[0].storeAction = MTLStoreActionStore;
@@ -134,14 +157,17 @@ void mcw::Engine::MainTick(float dt)
             [commandBuffer renderCommandEncoderWithDescriptor:pass];
             renderEncoder.label = @"MyRenderEncoder";
 
-            MTLViewport viewport = {0.0, 0.0, static_cast<double>(viewportSize.x * 2.0), static_cast<double>(viewportSize.y * 2.0), 0.0, 1.0 };
+            MTLViewport viewport = {0.0, 0.0, static_cast<double>(viewportSize.x), static_cast<double>(viewportSize.y), 0.0, 1.0 };
             [renderEncoder setViewport:viewport];
             
             [renderEncoder setRenderPipelineState:renderPipelineState];
+            [renderEncoder setDepthStencilState:depthLessEqual];
 
             if (scene)
             {
-                // best practices for small buffers
+                // best practices for small buffers less than 4 KB
+                static_assert(sizeof(CameraUniforms) < 4 * 1024, "Use update buffer instead of setVertexBytes!");
+                
                 [renderEncoder setVertexBytes:&scene->GetCamera()->cameraUniforms length:sizeof(CameraUniforms) atIndex:BufferIndexCameraUniforms];
                 
                 scene->Draw(renderEncoder);
@@ -158,7 +184,7 @@ void mcw::Engine::MainTick(float dt)
 void mcw::Engine::Cleanup()
 {
     MetalContext::Get().Cleanup();
+    EngineContext::Get().Cleanup();
     
-    SDL_DestroyWindow(window);
     SDL_Quit();
 }

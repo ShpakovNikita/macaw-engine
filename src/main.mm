@@ -3,7 +3,7 @@
 #include "Core/Engine.hpp"
 #include "Core/ImmutableConfig.hpp"
 
-const int WIDTH = 800, HEIGHT = 600;
+const int WIDTH = 1600, HEIGHT = 1200;
 
 int main(int argc, char* argv[])
 {

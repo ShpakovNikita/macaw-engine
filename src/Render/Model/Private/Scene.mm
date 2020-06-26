@@ -10,6 +10,7 @@
 #include "Render/Texture.hpp"
 #include "Render/Camera.hpp"
 #include "Core/Exceptions.hpp"
+#include "Core/EngineContext.hpp"
 #include "Utils/Logger.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -22,7 +23,7 @@
 
 namespace SScene
 {
-    const std::string kDefaultTexturePath = mcw::MetalContext::Get().GetAssetsPath() + "textures/ffffff.png";
+    const std::string kDefaultTexturePath = mcw::EngineContext::Get().GetAssetsPath() + "textures/ffffff.png";
 
     template <typename T>
     void FillVertexAttribute(const tinygltf::Primitive& primitive, const tinygltf::Model& input, const std::string& attrName, int compSize, const T** buffer, int& bufferStride)

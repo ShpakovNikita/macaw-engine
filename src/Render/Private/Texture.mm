@@ -1,6 +1,7 @@
 #include "Render/Texture.hpp"
 
 #include <filesystem>
+#include <map>
 
 #include "Core/Exceptions.hpp"
 #include "Render/MetalContext.hpp"
@@ -100,7 +101,16 @@ void mcw::Texture::LoadFromFile(const std::string& filename)
     }
 }
 
-void mcw::Texture::LoadFromBuffer(const void* data, MTLPixelFormat imageFormat, size_t width, size_t height, bool convertRGB8ToRGBA8/* = false*/)
+void mcw::Texture::CreateEmpty(size_t w, size_t h, MTLPixelFormat imageFormat)
+{
+    width = w;
+    height = h;
+    
+    LoadFromBuffer(nullptr, imageFormat, width, height, false, MTLStorageModePrivate, MTLTextureUsageRenderTarget);
+}
+
+void mcw::Texture::LoadFromBuffer(const void* data, MTLPixelFormat imageFormat, size_t width, size_t height, bool convertRGB8ToRGBA8/* = false*/, MTLStorageMode storageMode/* = MTLStorageModeManaged*/,
+    MTLTextureUsage usage/* = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite*/)
 {
     const void* buffer = data;
     
@@ -114,18 +124,23 @@ void mcw::Texture::LoadFromBuffer(const void* data, MTLPixelFormat imageFormat, 
     
     textureDescriptor.width = width;
     textureDescriptor.height = height;
+    textureDescriptor.storageMode = storageMode;
+    textureDescriptor.usage = usage;
     
     metalTexture = [MetalContext::Get().device newTextureWithDescriptor:textureDescriptor];
     
-    NSUInteger bytesPerRow = 4 * width;
-    
-    MTLRegion region = {
-        { 0, 0, 0 },       // MTLOrigin
-        {width, height, 1} // MTLSize
-    };
-    
-    [metalTexture replaceRegion:region
-                    mipmapLevel:0
-                      withBytes:buffer
-                    bytesPerRow:bytesPerRow];
+    if (storageMode == MTLStorageModeManaged)
+    {
+        NSUInteger bytesPerRow = 4 * width;
+        
+        MTLRegion region = {
+            { 0, 0, 0 },       // MTLOrigin
+            {width, height, 1} // MTLSize
+        };
+        
+        [metalTexture replaceRegion:region
+                        mipmapLevel:0
+                          withBytes:buffer
+                        bytesPerRow:bytesPerRow];
+    }
 }

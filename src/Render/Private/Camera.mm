@@ -1,11 +1,16 @@
 #include "Render/Camera.hpp"
 
+#include "Core/EngineContext.hpp"
+#include "Core/Window.hpp"
+
 #include "Render/MetalContext.hpp"
 
 #include <algorithm>
 
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
+#include "glm/gtx/euler_angles.hpp"
+
 #include "SDL_keyboard.h"
 
 mcw::Camera::Camera()
@@ -18,7 +23,7 @@ void mcw::Camera::PollEvent(const SDL_Event& event, float dt)
     switch (event.type) {
     case SDL_MOUSEWHEEL: {
         float speedDelta = cameraSpeed + event.wheel.y * dt;
-        cameraSpeed = glm::clamp(speedDelta, 0.1f, 5.0f);
+        cameraSpeed = glm::clamp(speedDelta, 0.1f, 15.0f);
     } break;
 
     case SDL_MOUSEMOTION: {
@@ -30,12 +35,16 @@ void mcw::Camera::PollEvent(const SDL_Event& event, float dt)
         isHolding = true;
         currentX = event.button.x;
         currentY = event.button.y;
+        lastX = currentX;
+        lastY = currentY;
     } break;
 
     case SDL_MOUSEBUTTONUP: {
         isHolding = false;
         currentX = event.button.x;
         currentY = event.button.y;
+        lastX = currentX;
+        lastY = currentY;
     } break;
             
     case SDL_KEYDOWN: {
@@ -105,9 +114,8 @@ void mcw::Camera::UpdateUniformBuffers(float dt)
     } uniforms;
     
     uniforms.view = glm::lookAt(position, position + cameraFront, kUpVector);
-    
-    // TODO: get width/height from engine config
-    uniforms.projection = glm::perspective(cameraFOV, 720.0f / 480.0f, 0.1f, 100.0f);
+    float cameraAspect = static_cast<float>(EngineContext::Get().GetWindow()->GetWidth()) / EngineContext::Get().GetWindow()->GetHeight();
+    uniforms.projection = glm::perspective(cameraFOV, cameraAspect, 0.1f, 100.0f);
     
     cameraUniforms = *reinterpret_cast<CameraUniforms*>(&uniforms);
 }
