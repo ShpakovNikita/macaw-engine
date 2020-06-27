@@ -5,11 +5,6 @@
 typedef enum VertexInputIndex
 {
     VertexInputIndexVertices = 0,
-    VertexInputBaseColorTexture,
-    VertexInputMetallicRoughnessTexture,
-    VertexInputNormalTexture,
-    VertexInputOcclusionTexture,
-    VertexInputEmissiveTexture,
     
     BufferIndexCameraUniforms,
     

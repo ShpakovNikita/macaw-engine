@@ -111,11 +111,13 @@ void mcw::Camera::UpdateUniformBuffers(float dt)
     {
         glm::mat4 view;
         glm::mat4 projection;
+        glm::mat4 rotation;
     } uniforms;
     
     uniforms.view = glm::lookAt(position, position + cameraFront, kUpVector);
     float cameraAspect = static_cast<float>(EngineContext::Get().GetWindow()->GetWidth()) / EngineContext::Get().GetWindow()->GetHeight();
     uniforms.projection = glm::perspective(cameraFOV, cameraAspect, 0.1f, 100.0f);
+    uniforms.rotation = glm::mat3(uniforms.view);
     
     cameraUniforms = *reinterpret_cast<CameraUniforms*>(&uniforms);
 }

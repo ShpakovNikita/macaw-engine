@@ -12,6 +12,7 @@ namespace mcw
 {
     class Scene;
     class Texture;
+    class EnvironmentProbe;
 
     class Engine
     {
@@ -31,15 +32,21 @@ namespace mcw
         
         void CreateSimplePipeline();
         void CreateDepthTexture();
+        void CreateSkybox();
+        
+        void DrawSkybox(id<MTLRenderCommandEncoder> renderEncoder);
         
         bool quit = false;
         
         ImmutableConfig config;
         
         id<MTLRenderPipelineState> renderPipelineState;
+        id<MTLRenderPipelineState> skyboxPipelineState;
         id<MTLDepthStencilState> depthLessEqual;
         
         std::unique_ptr<Texture> depthTexture;
         std::unique_ptr<Scene> scene;
+        std::unique_ptr<EnvironmentProbe> skybox;
+        std::unique_ptr<Scene> skyboxModel;
     };
 }

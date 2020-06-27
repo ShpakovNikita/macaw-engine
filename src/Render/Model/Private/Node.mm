@@ -6,6 +6,7 @@
 #include "Render/Model/Material.hpp"
 #include "Render/Texture.hpp"
 #include "Common/Vertex.hpp"
+#include "Common/Textures.hpp"
 
 #include <glm/gtx/quaternion.hpp>
 
@@ -50,15 +51,15 @@ void mcw::Node::Draw(id<MTLRenderCommandEncoder> renderEncoder) const
                                    atIndex:VertexInputIndexVertices];
             
             [renderEncoder setFragmentTexture:primitive->material.baseColorTexture->metalTexture
-                                      atIndex:VertexInputBaseColorTexture];
+                                      atIndex:BaseColorTexture];
             [renderEncoder setFragmentTexture:primitive->material.metallicRoughnessTexture->metalTexture
-                                      atIndex:VertexInputMetallicRoughnessTexture];
+                                      atIndex:MetallicRoughnessTexture];
             [renderEncoder setFragmentTexture:primitive->material.normalTexture->metalTexture
-                                      atIndex:VertexInputNormalTexture];
+                                      atIndex:NormalTexture];
             [renderEncoder setFragmentTexture:primitive->material.occlusionTexture->metalTexture
-                                      atIndex:VertexInputOcclusionTexture];
+                                      atIndex:OcclusionTexture];
             [renderEncoder setFragmentTexture:primitive->material.emissiveTexture->metalTexture
-                                      atIndex:VertexInputEmissiveTexture];
+                                      atIndex:EmissiveTexture];
             
             [renderEncoder drawIndexedPrimitives: MTLPrimitiveTypeTriangle
                                       indexCount: primitive->indexCount

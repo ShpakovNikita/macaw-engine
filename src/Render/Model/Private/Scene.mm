@@ -319,8 +319,7 @@ void mcw::Scene::LoadNode(Node* parent, const tinygltf::Node& node, uint32_t nod
                     } vert = {};
                     
                     vert.position = glm::vec4(glm::make_vec3(&bufferPos[v * posByteStride]), 1.0f);
-                    vert.position *= 0.08f;
-                    vert.position.z += 1.5f;
+                    vert.position *= globalscale;
                     vert.normal = glm::vec4(glm::normalize(glm::vec3(bufferNormals ? glm::make_vec3(&bufferNormals[v * normByteStride]) : glm::vec3(0.0f))), 1.0f);
                     glm::vec2 uv0 = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec2(0.0f);
                     glm::vec2 uv1 = bufferTexCoordSet1 ? glm::make_vec2(&bufferTexCoordSet1[v * uv1ByteStride]) : glm::vec2(0.0f);

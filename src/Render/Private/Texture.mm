@@ -30,6 +30,7 @@ namespace STexture
         uint64_t pixelsCount = width * height;
         size_t imageSize = pixelsCount * 4;
         T* rgba = new T[imageSize];
+        T* rgbaStartPtr = rgba;
         const T* rgb = static_cast<const T*>(data);
         for (size_t pixel = 0; pixel < pixelsCount; ++pixel)
         {
@@ -43,9 +44,11 @@ namespace STexture
             rgb += 3;
         }
         
-        return rgba;
+        return rgbaStartPtr;
     }
 }
+
+mcw::Texture::~Texture() = default;
 
 void mcw::Texture::LoadFromFile(const std::string& filename)
 {
@@ -68,7 +71,6 @@ void mcw::Texture::LoadFromFile(const std::string& filename)
     {
         width = static_cast<uint32_t>(imageWidth);
         height = static_cast<uint32_t>(imageHeight);
-        size_t imageSize = 0;
 
         if (isHDR)
         {
@@ -76,7 +78,9 @@ void mcw::Texture::LoadFromFile(const std::string& filename)
             
             if (nrComponents == 3)
             {
-                data = STexture::FromRGBToRGBA<float>(data, width, height);
+                void* newData = STexture::FromRGBToRGBA<float>(data, width, height);
+                stbi_image_free(data);
+                data = newData;
             }
             
             LoadFromBuffer(data, MTLPixelFormatRGBA32Float, width, height);
@@ -87,13 +91,15 @@ void mcw::Texture::LoadFromFile(const std::string& filename)
             
             if (nrComponents == 3)
             {
-                data = STexture::FromRGBToRGBA<unsigned char>(data, width, height);
+                void* newData = STexture::FromRGBToRGBA<unsigned char>(data, width, height);
+                stbi_image_free(data);
+                data = newData;
             }
             
             LoadFromBuffer(data, MTLPixelFormatRGBA8Unorm, width, height);
         }
-
-        stbi_image_free(data);
+        
+        // TODO: free image data properly
     }
     else
     {
@@ -112,7 +118,7 @@ void mcw::Texture::CreateEmpty(size_t w, size_t h, MTLPixelFormat imageFormat)
 void mcw::Texture::LoadFromBuffer(const void* data, MTLPixelFormat imageFormat, size_t width, size_t height, bool convertRGB8ToRGBA8/* = false*/, MTLStorageMode storageMode/* = MTLStorageModeManaged*/,
     MTLTextureUsage usage/* = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite*/)
 {
-    const void* buffer = data;
+    buffer = data;
     
     if (convertRGB8ToRGBA8)
     {

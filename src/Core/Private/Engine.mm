@@ -2,6 +2,8 @@
 
 #import "Foundation/Foundation.h"
 
+#include "Common/Textures.hpp"
+
 #include "Core/EngineContext.hpp"
 #include "Core/Window.hpp"
 
@@ -9,6 +11,7 @@
 #include "Render/MetalContext.hpp"
 #include "Render/Camera.hpp"
 #include "Render/Texture.hpp"
+#include "Render/EnvironmentProbe.hpp"
 
 #include <chrono>
 #include <thread>
@@ -83,6 +86,16 @@ void mcw::Engine::CreateSimplePipeline()
     error:&error];
     NSCAssert(renderPipelineState, @"Failed to create pipeline state: %@", error);
     
+    id<MTLFunction> skyboxVertexFunction = [defaultLibrary newFunctionWithName:@"SkyboxVertexShader"];
+    id<MTLFunction> skyboxFragmentFunction = [defaultLibrary newFunctionWithName:@"SkyboxFragmentShader"];
+    
+    pipelineStateDescriptor.vertexFunction = skyboxVertexFunction;
+    pipelineStateDescriptor.fragmentFunction = skyboxFragmentFunction;
+    
+    skyboxPipelineState = [MetalContext::Get().device newRenderPipelineStateWithDescriptor:pipelineStateDescriptor
+    error:&error];
+    NSCAssert(skyboxPipelineState, @"Failed to create skybox pipeline state: %@", error);
+    
     MTLDepthStencilDescriptor *depthDescriptor = [MTLDepthStencilDescriptor new];
     depthDescriptor.depthCompareFunction = MTLCompareFunctionLessEqual;
     depthDescriptor.depthWriteEnabled = YES;
@@ -90,11 +103,19 @@ void mcw::Engine::CreateSimplePipeline()
     NSCAssert(depthLessEqual, @"Failed to create pipeline state: %@", error);
 }
 
+void mcw::Engine::CreateSkybox()
+{
+    skybox = std::make_unique<EnvironmentProbe>();
+    skyboxModel = std::make_unique<Scene>();
+    skyboxModel->LoadFromFile(EngineContext::Get().GetAssetsPath() + "models/glTF-Sample-Models/2.0/Cube/glTF/Cube.gltf");
+}
+
 void mcw::Engine::Prepare()
 {
     CreateSimplePipeline();
     LoadModel(EngineContext::Get().GetAssetsPath() + "models/glTF-Sample-Models/2.0/MetalRoughSpheres/glTF/MetalRoughSpheres.gltf");
     CreateDepthTexture();
+    CreateSkybox();
 }
 
 void mcw::Engine::CreateDepthTexture()
@@ -111,8 +132,6 @@ void mcw::Engine::LoadModel(const std::string& filepath)
 
 void mcw::Engine::MainTick(float dt)
 {
-    static MTLClearColor color = MTLClearColorMake(0, 0, 0, 1);
-    
     @autoreleasepool
     {
         const vector_uint2 viewportSize = { config.width, config.height };
@@ -136,8 +155,6 @@ void mcw::Engine::MainTick(float dt)
 
         id<CAMetalDrawable> surface = [MetalContext::Get().swapchain nextDrawable];
         
-        color.red = (color.red > 1.0) ? 0 : color.red + dt;
-
         MTLRenderPassDescriptor *pass = [MTLRenderPassDescriptor renderPassDescriptor];
         
         pass.depthAttachment.texture      = depthTexture->metalTexture;
@@ -145,7 +162,7 @@ void mcw::Engine::MainTick(float dt)
         pass.depthAttachment.clearDepth   = 1.0;
         pass.depthAttachment.storeAction  = MTLStoreActionStore;
         
-        pass.colorAttachments[0].clearColor = color;
+        pass.colorAttachments[0].clearColor = MTLClearColorMake(1, 1, 1, 1);
         pass.colorAttachments[0].loadAction  = MTLLoadActionClear;
         pass.colorAttachments[0].storeAction = MTLStoreActionStore;
         pass.colorAttachments[0].texture = surface.texture;
@@ -159,12 +176,16 @@ void mcw::Engine::MainTick(float dt)
 
             MTLViewport viewport = {0.0, 0.0, static_cast<double>(viewportSize.x), static_cast<double>(viewportSize.y), 0.0, 1.0 };
             [renderEncoder setViewport:viewport];
-            
-            [renderEncoder setRenderPipelineState:renderPipelineState];
-            [renderEncoder setDepthStencilState:depthLessEqual];
 
+            DrawSkybox(renderEncoder);
+            
             if (scene)
             {
+                [renderEncoder setRenderPipelineState:renderPipelineState];
+                [renderEncoder setDepthStencilState:depthLessEqual];
+                
+                [renderEncoder setCullMode:MTLCullModeFront];
+                
                 // best practices for small buffers less than 4 KB
                 static_assert(sizeof(CameraUniforms) < 4 * 1024, "Use update buffer instead of setVertexBytes!");
                 
@@ -178,6 +199,26 @@ void mcw::Engine::MainTick(float dt)
         
         [commandBuffer presentDrawable:surface];
         [commandBuffer commit];
+    }
+}
+
+void mcw::Engine::DrawSkybox(id<MTLRenderCommandEncoder> renderEncoder)
+{
+    if (skyboxModel)
+    {
+        [renderEncoder setRenderPipelineState:skyboxPipelineState];
+        
+        [renderEncoder setCullMode:MTLCullModeBack];
+        
+        // best practices for small buffers less than 4 KB
+        static_assert(sizeof(CameraUniforms) < 4 * 1024, "Use update buffer instead of setVertexBytes!");
+        
+        [renderEncoder setVertexBytes:&scene->GetCamera()->cameraUniforms length:sizeof(CameraUniforms) atIndex:BufferIndexCameraUniforms];
+        
+        [renderEncoder setFragmentTexture:skybox->metalTexture atIndex:SkyboxTexture];
+        [renderEncoder setFragmentSamplerState:skybox->samplerState atIndex:SkyboxSampler];
+        
+        skyboxModel->Draw(renderEncoder);
     }
 }
 
